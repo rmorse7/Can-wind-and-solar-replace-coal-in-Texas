@@ -1,0 +1,60 @@
+
+active_case( 'No Financial Solar' );
+
+//set location and resource mode to 'use a specific weather file on disk'
+set('use_specific_weather_file',1);
+
+// get weather files
+dir = "/Users/sarah/Desktop/Data/Solar Weather 2011";
+if (!dir_exists(dir)) msgbox("Could not find \"" + dir + "\" folder for " +
+                             "weather files.\n\n Before running this script, " +
+                             "be sure to save the SAM file (.sam) and " + 
+                             "create a folder named \"weather\" in " +
+                             "the folder that contains the .sam " +
+                             "file.");
+files = dir_list(dir,'*');
+for (i=0;i<#files;i++)
+{
+  files[i] = dir + '/' + files[i];
+}
+outln("There are " + #files + " files in " + dir);
+outln();
+
+half_hour_count = 17520;
+half_hours_per_day = 48;
+
+for( i=0;i<#files;i++ )
+{
+	
+	set('user_specified_weather_file',files[i]);
+	simulate();
+	
+	X.Latitude = get('lat');
+	X.Longitude = get('lon');
+	X.DC_Nameplate = get('system_capacity');
+	X.Year = 2011;
+	
+	day = 0;
+	hour = get('sunpos_hour');
+	hourly_production = get('dc_net');
+	ac_loss = get('ac_wiring_loss');
+	inv_loss = get('inv_total_loss');
+	
+	name = file_only(files[i]);
+	outln(name);
+	outln(i);
+	
+	for(j=0;j<17520;j++)
+	{
+		if(hour[j]==0)
+		{
+			day++;
+		}
+		X.Day[j] = day;
+		X.Hour[j] = hour[j];
+		X.PowerGen_kW[j] = hourly_production[j] - ac_loss[j] - inv_loss[j];
+		X.Capacity_Factor[j] = hourly_production[j]/get('system_capacity');
+	}
+	
+	csvwrite( "/Users/sarah/Desktop/Data/Solar Power 2011/"+name, X );
+}
